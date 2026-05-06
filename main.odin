@@ -36,17 +36,26 @@ scene := Scene {
         {
             {0., -1., 3.},
             1.,
-            {255, 0, 0}
+            {255, 0, 0},
+            500.,
         },
         {
             {2., 0., 3.},
             1.,
-            {0, 255, 0}
+            {0, 255, 0},
+            500.,
         },
         {
             {-2., 0., 3.},
             1.,
-            {0, 0, 255}
+            {0, 0, 255},
+            50,
+        },
+        {
+            {0., -5001., 0.},
+            5000.,
+            {255, 255, 0},
+            1000.
         },
     },
     []Light {
@@ -65,7 +74,7 @@ scene := Scene {
     }
 }
 
-computing_light :: proc(p, n, v: Vec3) -> f64 {
+computing_light :: proc(p, n, v: Vec3, s: f64) -> f64 {
     intensity := 0.
     for light in scene.lights {
         #partial switch l in light.type {
@@ -80,6 +89,15 @@ computing_light :: proc(p, n, v: Vec3) -> f64 {
             n_dot_l := dot(n, dir)
             if n_dot_l > 0 {
                 intensity += light.intensity * n_dot_l / (length(n) * length(dir))
+            }
+
+            // specular 
+            if s != -1 {
+                r := 2. * n * dot(n, dir) - dir 
+                r_dot_v := dot(r, v)
+                if r_dot_v > 0 {
+                    intensity += light.intensity * math.pow(r_dot_v / (length(r) * length(v)), s)
+                }
             }
         }
     }
@@ -125,7 +143,8 @@ trace_ray :: proc(o, d: Vec3, t_min, t_max: f64) -> Rgb {
     closest_sphere := scene.spheres[hit]
     p := o + d * closest_t
     n := normalize(p - closest_sphere.center)  
-    light := computing_light(p, n, -d)
+    light := computing_light(p, n, -d, closest_sphere.specular)
+    if light > 1. do light = 1.
     base := closest_sphere.color
     return Rgb {
         byte(f64(base.r) * light),

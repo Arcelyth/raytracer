@@ -7,7 +7,8 @@ Vec3 :: [3]f64
 Sphere :: struct {
     center: Vec3, 
     radius: f64,
-    color: Rgb
+    color: Rgb,
+    specular: f64,
 }
 
 canvas_to_viewpoint :: proc(x, y: int) -> Vec3 {
