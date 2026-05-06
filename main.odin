@@ -82,8 +82,15 @@ computing_light :: proc(p, n, v: Vec3, s: f64) -> f64 {
             intensity += light.intensity
         case :
             dir: Vec3
-            if point, ok := l.(Point); ok do dir = point.position - p
+            t_max := 1.e10
+            if point, ok := l.(Point); ok do dir, t_max = point.position - p, 1.
             if direct, ok := l.(Directional); ok do dir = direct.direction
+
+            // shadow
+            _, hit := closest_intersection(p, dir, 0.001, t_max)
+            if hit != -1 {
+                continue
+            }
 
             // diffuse
             n_dot_l := dot(n, dir)
