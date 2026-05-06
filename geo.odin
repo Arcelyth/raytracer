@@ -1,5 +1,7 @@
 package raytracer
 
+import "core:math"
+
 Vec3 :: [3]f64
 
 Sphere :: struct {
@@ -24,4 +26,13 @@ canvas_to_viewpoint :: proc(x, y: int) -> Vec3 {
 
 dot :: proc(a, b: Vec3) -> f64 {
     return a.x * b.x + a.y * b.y + a.z * b.z
+}
+
+length :: proc(v: Vec3) -> f64 {
+    return math.sqrt(dot(v, v))
+}
+
+normalize :: proc(v: Vec3) -> Vec3 {
+    l := length(v)
+    return v / l
 }

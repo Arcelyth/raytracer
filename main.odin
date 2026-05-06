@@ -3,10 +3,32 @@ package raytracer
 import "core:fmt"
 import "core:math"
 
+LightType :: union {
+    Ambient,
+    Point,
+    Directional,
+}
+
+Ambient :: struct {}
+
+Point :: struct {
+    position: Vec3
+}
+
+Directional :: struct {
+    direction: Vec3
+}
+
+Light :: struct {
+    type: LightType,
+    intensity: f64
+}
+
 Background := Rgb {0, 0, 0}
 
 Scene :: struct {
-    spheres: []Sphere
+    spheres: []Sphere,
+    lights: []Light
 }
 
 scene := Scene {
@@ -26,7 +48,42 @@ scene := Scene {
             1.,
             {0, 0, 255}
         },
+    },
+    []Light {
+        {
+            Ambient {},
+            .2
+        },
+        {
+            Point {{2., 1., 0.}},
+            .6
+        },
+        {
+            Directional {{1., 4., 4.}},
+            .2
+        }
     }
+}
+
+computing_light :: proc(p, n, v: Vec3) -> f64 {
+    intensity := 0.
+    for light in scene.lights {
+        #partial switch l in light.type {
+        case Ambient: 
+            intensity += light.intensity
+        case :
+            dir: Vec3
+            if point, ok := l.(Point); ok do dir = point.position - p
+            if direct, ok := l.(Directional); ok do dir = direct.direction
+
+            // diffuse
+            n_dot_l := dot(n, dir)
+            if n_dot_l > 0 {
+                intensity += light.intensity * n_dot_l / (length(n) * length(dir))
+            }
+        }
+    }
+    return intensity
 }
 
 intersect_ray_sphere :: proc(o, d: Vec3, sphere: Sphere, t_max: f64) -> (f64, f64) {
@@ -66,8 +123,15 @@ trace_ray :: proc(o, d: Vec3, t_min, t_max: f64) -> Rgb {
     if hit == -1 do return Background
 
     closest_sphere := scene.spheres[hit]
+    p := o + d * closest_t
+    n := normalize(p - closest_sphere.center)  
+    light := computing_light(p, n, -d)
     base := closest_sphere.color
-    return base 
+    return Rgb {
+        byte(f64(base.r) * light),
+        byte(f64(base.g) * light),
+        byte(f64(base.b) * light),
+    } 
 }
 
 main :: proc() {
