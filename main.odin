@@ -38,24 +38,28 @@ scene := Scene {
             1.,
             {255, 0, 0},
             500.,
+            0.2
         },
         {
             {2., 0., 3.},
             1.,
             {0, 255, 0},
             500.,
+            0.3,
         },
         {
             {-2., 0., 3.},
             1.,
             {0, 0, 255},
             50,
+            0.4
         },
         {
             {0., -5001., 0.},
             5000.,
             {255, 255, 0},
-            1000.
+            1000.,
+            0.5
         },
     },
     []Light {
@@ -143,7 +147,11 @@ closest_intersection :: proc(o, d: Vec3, t_min, t_max: f64) -> (f64, int) {
     return closest_t, hit
 }
 
-trace_ray :: proc(o, d: Vec3, t_min, t_max: f64) -> Rgb {
+reflect_ray :: proc(r, n: Vec3) -> Vec3 {
+    return 2 * n * dot(n, r) - r
+}
+
+trace_ray :: proc(o, d: Vec3, t_min, t_max: f64, recursion_depth: int) -> Rgb {
     closest_t, hit := closest_intersection(o, d, t_min, t_max)
     if hit == -1 do return Background
 
@@ -153,11 +161,24 @@ trace_ray :: proc(o, d: Vec3, t_min, t_max: f64) -> Rgb {
     light := computing_light(p, n, -d, closest_sphere.specular)
     if light > 1. do light = 1.
     base := closest_sphere.color
-    return Rgb {
+    local_color := Rgb {
         byte(f64(base.r) * light),
         byte(f64(base.g) * light),
         byte(f64(base.b) * light),
     } 
+    r := closest_sphere.reflective
+    if recursion_depth <= 0 || r <= 0 {
+        return local_color
+    }
+
+    rr := reflect_ray(-d, n)
+    reflected_color := trace_ray(p, rr, 0.001, t_max, recursion_depth - 1)
+
+    return Rgb {
+        byte(f64(local_color.r) * (1 - r) + f64(reflected_color.r) * r), 
+        byte(f64(local_color.g) * (1 - r) + f64(reflected_color.g) * r), 
+        byte(f64(local_color.b) * (1 - r) + f64(reflected_color.b) * r), 
+    }
 }
 
 main :: proc() {
@@ -170,7 +191,7 @@ main :: proc() {
     for y in 0..<height {
         for x in 0..<width {
             d := canvas_to_viewpoint(x, y)
-            color := trace_ray(o, d, 1., 1.e10)
+            color := trace_ray(o, d, 1., 1.e10, 2)
             set_pixel(&ps, color, x, y)
         }
     }
