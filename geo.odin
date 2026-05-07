@@ -12,8 +12,8 @@ Sphere :: struct {
     reflective: f64,
 }
 
-canvas_to_viewpoint :: proc(x, y: int) -> Vec3 {
-    // viewpoint's width, height, distance
+canvas_to_viewport :: proc(x, y: int) -> Vec3 {
+    // viewport's width, height, distance
     vw, vh, d := 1., 1., 1.
 
     cx := f64(x) - f64(width) / 2.

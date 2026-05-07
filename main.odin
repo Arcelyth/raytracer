@@ -190,7 +190,7 @@ main :: proc() {
 
     for y in 0..<height {
         for x in 0..<width {
-            d := canvas_to_viewpoint(x, y)
+            d := canvas_to_viewport(x, y)
             color := trace_ray(o, d, 1., 1.e10, 2)
             set_pixel(&ps, color, x, y)
         }
